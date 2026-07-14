@@ -1,0 +1,30 @@
+{
+  "name": "craftfolio-server",
+  "version": "1.0.0",
+  "description": "Craftfolio — Artisan Marketplace Backend Server",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --exec tsx src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "jose-cjs": "latest",
+    "mongodb": "latest"
+  },
+  "devDependencies": {
+    "nodemon": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}
