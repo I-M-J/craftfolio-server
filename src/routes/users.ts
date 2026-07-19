@@ -68,7 +68,7 @@ usersRouter.post('/', async (req: Request, res: Response): Promise<void> => {
 // PATCH /users/:id/role — update role (admin only)
 usersRouter.patch('/:id/role', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void, async (req: Request, res: Response): Promise<void> => {
     try {
-        const id = req.params.id;
+        const id = String(req.params.id);
         const { role } = req.body as { role: string };
         const db = await getDb();
         const filter = { _id: new ObjectId(id) };
@@ -83,7 +83,7 @@ usersRouter.patch('/:id/role', verifyToken as unknown as (req: Request, res: Res
 // DELETE /users/:id — delete user (admin only)
 usersRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void, async (req: Request, res: Response): Promise<void> => {
     try {
-        const id = req.params.id;
+        const id = String(req.params.id);
         const db = await getDb();
         const query = { _id: new ObjectId(id) };
         const result = await db.collection('users').deleteOne(query);

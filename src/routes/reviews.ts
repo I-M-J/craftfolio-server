@@ -94,7 +94,7 @@ reviewsRouter.post('/', verifyToken as unknown as (req: Request, res: Response, 
 // DELETE /reviews/:id — delete review (verifyToken + owner/admin check)
 reviewsRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const id = req.params.id;
+        const id = String(req.params.id);
         if (!ObjectId.isValid(id)) {
             res.status(400).send({ message: 'Invalid review ID' });
             return;

@@ -94,7 +94,7 @@ itemsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
 // GET /items/:id — single item detail
 itemsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
     try {
-        const id = req.params.id;
+        const id = String(req.params.id);
         if (!ObjectId.isValid(id)) {
             res.status(400).send({ message: 'Invalid item ID' });
             return;
@@ -146,7 +146,7 @@ itemsRouter.post('/', verifyToken as unknown as (req: Request, res: Response, ne
 // PATCH /items/:id — update item (verifyToken + owner check)
 itemsRouter.patch('/:id', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const id = req.params.id;
+        const id = String(req.params.id);
         if (!ObjectId.isValid(id)) {
             res.status(400).send({ message: 'Invalid item ID' });
             return;
@@ -180,7 +180,7 @@ itemsRouter.patch('/:id', verifyToken as unknown as (req: Request, res: Response
 // DELETE /items/:id — delete item (verifyToken + owner check)
 itemsRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const id = req.params.id;
+        const id = String(req.params.id);
         if (!ObjectId.isValid(id)) {
             res.status(400).send({ message: 'Invalid item ID' });
             return;
