@@ -296,7 +296,9 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
     }
 }
 
-dbConnectionPromise = connectDB();
+if (process.env.NODE_ENV !== 'production') {
+    dbConnectionPromise = connectDB();
+}
 
 // ============================================================
 // DB CONNECTION CHECK MIDDLEWARE
