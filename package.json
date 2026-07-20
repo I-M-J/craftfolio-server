@@ -8,6 +8,8 @@
     "start": "node dist/index.js",
     "build": "tsc",
     "seed": "tsx scripts/seed-users.ts",
+    "seed:items": "tsx scripts/seed-items.ts",
+    "seed:all": "tsx scripts/seed-users.ts && tsx scripts/seed-items.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
