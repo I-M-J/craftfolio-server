@@ -6,13 +6,17 @@ import { AuthRequest } from '../types';
 
 export const usersRouter = Router();
 
-const uri = process.env.MONGODB_URI;
-const client = uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))
-    ? new MongoClient(uri)
-    : null;
+let client: MongoClient | null = null;
 
 const getDb = async () => {
-    if (!client) throw new Error('Database client not initialized');
+    if (!client) {
+        const uri = process.env.MONGODB_URI;
+        if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
+            client = new MongoClient(uri);
+        } else {
+            throw new Error('Database client not initialized: MONGODB_URI missing');
+        }
+    }
     await client.connect();
     return client.db('craftfolio_db');
 };
@@ -35,6 +39,28 @@ usersRouter.get('/me', verifyToken as unknown as (req: Request, res: Response, n
         const db = await getDb();
         const user = await db.collection('users').findOne({ email });
         res.send(user || {});
+    } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch user', error: (error as Error).message });
+    }
+});
+
+// GET /users/email/:email — get public user details
+usersRouter.get('/email/:email', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email } = req.params;
+        const db = await getDb();
+        const user = await db.collection('users').findOne({ email });
+        if (!user) {
+            res.status(404).send({ message: 'User not found' });
+            return;
+        }
+        res.send({
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: user.role,
+            createdAt: user.createdAt,
+        });
     } catch (error) {
         res.status(500).send({ message: 'Failed to fetch user', error: (error as Error).message });
     }

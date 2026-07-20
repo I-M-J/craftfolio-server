@@ -3,13 +3,17 @@ import { MongoClient } from 'mongodb';
 
 export const statsRouter = Router();
 
-const uri = process.env.MONGODB_URI;
-const client = uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))
-    ? new MongoClient(uri)
-    : null;
+let client: MongoClient | null = null;
 
 const getDb = async () => {
-    if (!client) throw new Error('Database client not initialized');
+    if (!client) {
+        const uri = process.env.MONGODB_URI;
+        if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
+            client = new MongoClient(uri);
+        } else {
+            throw new Error('Database client not initialized: MONGODB_URI missing');
+        }
+    }
     await client.connect();
     return client.db('craftfolio_db');
 };

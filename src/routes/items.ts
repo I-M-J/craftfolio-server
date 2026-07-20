@@ -5,13 +5,17 @@ import { AuthRequest } from '../types';
 
 export const itemsRouter = Router();
 
-const uri = process.env.MONGODB_URI;
-const client = uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))
-    ? new MongoClient(uri)
-    : null;
+let client: MongoClient | null = null;
 
 const getDb = async () => {
-    if (!client) throw new Error('Database client not initialized');
+    if (!client) {
+        const uri = process.env.MONGODB_URI;
+        if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
+            client = new MongoClient(uri);
+        } else {
+            throw new Error('Database client not initialized: MONGODB_URI missing');
+        }
+    }
     await client.connect();
     return client.db('craftfolio_db');
 };
@@ -34,7 +38,7 @@ itemsRouter.get('/featured', async (_req: Request, res: Response): Promise<void>
 // GET /items — list with search, filter, sort, pagination
 itemsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { search, category, minPrice, maxPrice, sortBy, page, limit } = req.query as {
+        const { search, category, minPrice, maxPrice, sortBy, page, limit, sellerEmail } = req.query as {
             search?: string;
             category?: string;
             minPrice?: string;
@@ -42,11 +46,16 @@ itemsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
             sortBy?: string;
             page?: string;
             limit?: string;
+            sellerEmail?: string;
         };
 
         const db = await getDb();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const query: Record<string, any> = {};
+
+        if (sellerEmail) {
+            query.sellerEmail = sellerEmail;
+        }
 
         if (search) {
             query.$or = [

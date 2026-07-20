@@ -104,7 +104,19 @@ async function seedAdmin(db: ReturnType<MongoClient['db']>): Promise<void> {
 async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
     try {
         const count = await db.collection('items').countDocuments();
-        if (count > 0) return;
+        if (count > 0) {
+            const hasEmma = await db.collection('items').findOne({ sellerEmail: 'emma@craftfolio.com' });
+            if (hasEmma || count !== 12) {
+                console.log('Old 12-seller seed data detected. Resetting items collection to seed 3 sellers...');
+                try {
+                    await db.collection('items').drop();
+                } catch (dropErr) {
+                    console.error('Error dropping items collection:', (dropErr as Error).message);
+                }
+            } else {
+                return;
+            }
+        }
 
         const sampleItems = [
             {
@@ -114,7 +126,7 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Ceramics',
                 price: 24,
                 imageUrl: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=800',
-                sellerEmail: 'demo@craftfolio.com',
+                sellerEmail: 'maya@craftfolio.com',
                 sellerName: 'Maya Chen',
                 avgRating: 4.9,
                 totalReviews: 47,
@@ -128,7 +140,7 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Textile & Fiber',
                 price: 65,
                 imageUrl: 'https://i.pinimg.com/originals/6b/b3/99/6bb399bc151b882366a0caf9ffb92e63.jpg',
-                sellerEmail: 'demo@craftfolio.com',
+                sellerEmail: 'layla@craftfolio.com',
                 sellerName: 'Layla Osman',
                 avgRating: 4.8,
                 totalReviews: 32,
@@ -142,7 +154,7 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Leather',
                 price: 48,
                 imageUrl: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=800',
-                sellerEmail: 'demo@craftfolio.com',
+                sellerEmail: 'james@craftfolio.com',
                 sellerName: 'James Kowalski',
                 avgRating: 4.7,
                 totalReviews: 28,
@@ -156,8 +168,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Candles & Soaps',
                 price: 18,
                 imageUrl: 'https://m.media-amazon.com/images/S/aplus-media-library-service-media/5a29bc4f-27b3-48c9-8a09-cb7a8dbb0adc.__CR0,0,1600,1200_PT0_SX800_V1___.jpg',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Emma Hart',
+                sellerEmail: 'maya@craftfolio.com',
+                sellerName: 'Maya Chen',
                 avgRating: 4.9,
                 totalReviews: 84,
                 tags: ['candle', 'lavender', 'soy', 'aromatherapy'],
@@ -170,8 +182,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Woodwork',
                 price: 72,
                 imageUrl: 'https://images.unsplash.com/photo-1610725664285-7c57e6eeac3f?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Thomas Rivera',
+                sellerEmail: 'layla@craftfolio.com',
+                sellerName: 'Layla Osman',
                 avgRating: 4.8,
                 totalReviews: 19,
                 tags: ['cheese board', 'walnut', 'wood', 'kitchen'],
@@ -184,8 +196,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Jewelry',
                 price: 55,
                 imageUrl: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Sofia Mendez',
+                sellerEmail: 'james@craftfolio.com',
+                sellerName: 'James Kowalski',
                 avgRating: 4.6,
                 totalReviews: 53,
                 tags: ['ring', 'silver', 'jewelry', 'forged'],
@@ -198,8 +210,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Textile & Fiber',
                 price: 38,
                 imageUrl: 'https://images.unsplash.com/photo-1591561954557-26941169b49e?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Amara Diallo',
+                sellerEmail: 'layla@craftfolio.com',
+                sellerName: 'Layla Osman',
                 avgRating: 4.7,
                 totalReviews: 22,
                 tags: ['tote', 'embroidery', 'canvas', 'botanical'],
@@ -212,8 +224,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Mixed Media',
                 price: 42,
                 imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Priya Sharma',
+                sellerEmail: 'maya@craftfolio.com',
+                sellerName: 'Maya Chen',
                 avgRating: 4.9,
                 totalReviews: 36,
                 tags: ['pressed flowers', 'art', 'frame', 'botanical'],
@@ -226,11 +238,11 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Textile & Fiber',
                 price: 44,
                 imageUrl: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Kenji Tanaka',
+                sellerEmail: 'james@craftfolio.com',
+                sellerName: 'James Kowalski',
                 avgRating: 4.8,
                 totalReviews: 14,
-                tags: ['table runner', 'linen', 'indigo', 'shibori'],
+                tags: ['table runner', 'indigo', 'shibori', 'linen'],
                 createdAt: new Date('2026-07-05'),
             },
             {
@@ -240,8 +252,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Mixed Media',
                 price: 22,
                 imageUrl: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Clara Novak',
+                sellerEmail: 'maya@craftfolio.com',
+                sellerName: 'Maya Chen',
                 avgRating: 4.7,
                 totalReviews: 61,
                 tags: ['beeswax', 'eco', 'food wrap', 'sustainable'],
@@ -254,8 +266,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Woodwork',
                 price: 58,
                 imageUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Marcus Webb',
+                sellerEmail: 'layla@craftfolio.com',
+                sellerName: 'Layla Osman',
                 avgRating: 4.9,
                 totalReviews: 27,
                 tags: ['pen', 'oak', 'wood', 'writing'],
@@ -268,8 +280,8 @@ async function seedItems(db: ReturnType<MongoClient['db']>): Promise<void> {
                 category: 'Paper Craft',
                 price: 35,
                 imageUrl: 'https://images.unsplash.com/photo-1547127796-06bb04e4b315?w=800',
-                sellerEmail: 'demo@craftfolio.com',
-                sellerName: 'Yuki Nakamura',
+                sellerEmail: 'james@craftfolio.com',
+                sellerName: 'James Kowalski',
                 avgRating: 4.8,
                 totalReviews: 18,
                 tags: ['origami', 'paper', 'mobile', 'japanese'],
