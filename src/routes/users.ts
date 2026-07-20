@@ -1,50 +1,45 @@
 import { Router, Request, Response } from 'express';
-import { MongoClient, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
+import { getDb } from '../lib/db';
 import { verifyToken } from '../middleware/verifyToken';
 import { verifyAdmin } from '../middleware/verifyAdmin';
 import { AuthRequest } from '../types';
 
 export const usersRouter = Router();
 
-let client: MongoClient | null = null;
-
-const getDb = async () => {
-    if (!client) {
-        const uri = process.env.MONGODB_URI;
-        if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
-            client = new MongoClient(uri);
-        } else {
-            throw new Error('Database client not initialized: MONGODB_URI missing');
+// GET /users — all users (admin only)
+usersRouter.get(
+    '/',
+    verifyToken as unknown as (req: Request, res: Response, next: () => void) => void,
+    verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void,
+    async (_req: Request, res: Response): Promise<void> => {
+        try {
+            const db = await getDb();
+            const result = await db.collection('users').find({}).toArray();
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ message: 'Failed to fetch users', error: (error as Error).message });
         }
     }
-    await client.connect();
-    return client.db('craftfolio_db');
-};
-
-// GET /users — all users (admin only)
-usersRouter.get('/', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void, async (_req: Request, res: Response): Promise<void> => {
-    try {
-        const db = await getDb();
-        const result = await db.collection('users').find({}).toArray();
-        res.send(result);
-    } catch (error) {
-        res.status(500).send({ message: 'Failed to fetch users', error: (error as Error).message });
-    }
-});
+);
 
 // GET /users/me — current user profile
-usersRouter.get('/me', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-        const email = req.user?.email;
-        const db = await getDb();
-        const user = await db.collection('users').findOne({ email });
-        res.send(user || {});
-    } catch (error) {
-        res.status(500).send({ message: 'Failed to fetch user', error: (error as Error).message });
+usersRouter.get(
+    '/me',
+    verifyToken as unknown as (req: Request, res: Response, next: () => void) => void,
+    async (req: AuthRequest, res: Response): Promise<void> => {
+        try {
+            const email = req.user?.email;
+            const db = await getDb();
+            const user = await db.collection('users').findOne({ email });
+            res.send(user || {});
+        } catch (error) {
+            res.status(500).send({ message: 'Failed to fetch user', error: (error as Error).message });
+        }
     }
-});
+);
 
-// GET /users/email/:email — get public user details
+// GET /users/email/:email — public seller profile (no auth required)
 usersRouter.get('/email/:email', async (req: Request, res: Response): Promise<void> => {
     try {
         const { email } = req.params;
@@ -66,7 +61,7 @@ usersRouter.get('/email/:email', async (req: Request, res: Response): Promise<vo
     }
 });
 
-// POST /users — create/sync user on login
+// POST /users — create/sync user on registration
 usersRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const user = req.body as { email: string; name: string; image?: string; role?: string };
@@ -91,30 +86,40 @@ usersRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-// PATCH /users/:id/role — update role (admin only)
-usersRouter.patch('/:id/role', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void, async (req: Request, res: Response): Promise<void> => {
-    try {
-        const id = String(req.params.id);
-        const { role } = req.body as { role: string };
-        const db = await getDb();
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = { $set: { role } };
-        const result = await db.collection('users').updateOne(filter, updateDoc);
-        res.send(result);
-    } catch (error) {
-        res.status(500).send({ message: 'Failed to update user role', error: (error as Error).message });
+// PATCH /users/:id/role — update user role (admin only)
+usersRouter.patch(
+    '/:id/role',
+    verifyToken as unknown as (req: Request, res: Response, next: () => void) => void,
+    verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void,
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const id = String(req.params.id);
+            const { role } = req.body as { role: string };
+            const db = await getDb();
+            const result = await db.collection('users').updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { role } }
+            );
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ message: 'Failed to update user role', error: (error as Error).message });
+        }
     }
-});
+);
 
 // DELETE /users/:id — delete user (admin only)
-usersRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void, async (req: Request, res: Response): Promise<void> => {
-    try {
-        const id = String(req.params.id);
-        const db = await getDb();
-        const query = { _id: new ObjectId(id) };
-        const result = await db.collection('users').deleteOne(query);
-        res.send(result);
-    } catch (error) {
-        res.status(500).send({ message: 'Failed to delete user', error: (error as Error).message });
+usersRouter.delete(
+    '/:id',
+    verifyToken as unknown as (req: Request, res: Response, next: () => void) => void,
+    verifyAdmin as unknown as (req: Request, res: Response, next: () => void) => void,
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const id = String(req.params.id);
+            const db = await getDb();
+            const result = await db.collection('users').deleteOne({ _id: new ObjectId(id) });
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ message: 'Failed to delete user', error: (error as Error).message });
+        }
     }
-});
+);

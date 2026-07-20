@@ -1,26 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { MongoClient, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
+import { getDb } from '../lib/db';
 import { verifyToken } from '../middleware/verifyToken';
 import { AuthRequest } from '../types';
 
 export const reviewsRouter = Router();
 
-let client: MongoClient | null = null;
-
-const getDb = async () => {
-    if (!client) {
-        const uri = process.env.MONGODB_URI;
-        if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
-            client = new MongoClient(uri);
-        } else {
-            throw new Error('Database client not initialized: MONGODB_URI missing');
-        }
-    }
-    await client.connect();
-    return client.db('craftfolio_db');
-};
-
-// GET /reviews — reviews by ?itemId=
+// GET /reviews — reviews filtered by ?itemId= or ?reviewerEmail=
 reviewsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const { itemId, reviewerEmail, limit } = req.query as {
@@ -49,7 +35,7 @@ reviewsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-// POST /reviews — add review (verifyToken); recalculate item avgRating
+// POST /reviews — add review (verifyToken); recalculates item avgRating
 reviewsRouter.post('/', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const review = req.body as {
@@ -70,7 +56,7 @@ reviewsRouter.post('/', verifyToken as unknown as (req: Request, res: Response, 
 
         const result = await db.collection('reviews').insertOne(newReview);
 
-        // Recalculate avgRating on the item
+        // Recalculate avgRating and totalReviews on the item
         if (review.itemId && ObjectId.isValid(review.itemId)) {
             const allReviews = await db.collection('reviews')
                 .find({ itemId: review.itemId })
@@ -95,7 +81,7 @@ reviewsRouter.post('/', verifyToken as unknown as (req: Request, res: Response, 
     }
 });
 
-// DELETE /reviews/:id — delete review (verifyToken + owner/admin check)
+// DELETE /reviews/:id — delete review (verifyToken + owner or admin check); recalculates item avgRating
 reviewsRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const id = String(req.params.id);
@@ -121,8 +107,7 @@ reviewsRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Respo
             return;
         }
 
-        const query = { _id: new ObjectId(id) };
-        const result = await db.collection('reviews').deleteOne(query);
+        const result = await db.collection('reviews').deleteOne({ _id: new ObjectId(id) });
 
         // Recalculate avgRating after deletion
         if (review.itemId && ObjectId.isValid(review.itemId)) {

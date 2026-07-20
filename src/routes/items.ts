@@ -1,26 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { MongoClient, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
+import { getDb } from '../lib/db';
 import { verifyToken } from '../middleware/verifyToken';
 import { AuthRequest } from '../types';
 
 export const itemsRouter = Router();
 
-let client: MongoClient | null = null;
-
-const getDb = async () => {
-    if (!client) {
-        const uri = process.env.MONGODB_URI;
-        if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
-            client = new MongoClient(uri);
-        } else {
-            throw new Error('Database client not initialized: MONGODB_URI missing');
-        }
-    }
-    await client.connect();
-    return client.db('craftfolio_db');
-};
-
-// GET /items/featured — 8 items for homepage (must come before /:id)
+// GET /items/featured — 8 highest-rated items for the homepage (must come before /:id)
 itemsRouter.get('/featured', async (_req: Request, res: Response): Promise<void> => {
     try {
         const db = await getDb();
@@ -76,7 +62,6 @@ itemsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
             if (maxPrice) query.price.$lte = parseFloat(maxPrice);
         }
 
-        // Sort options
         let sortOption: Record<string, 1 | -1> = { createdAt: -1 };
         if (sortBy === 'price_asc') sortOption = { price: 1 };
         else if (sortBy === 'price_desc') sortOption = { price: -1 };
@@ -109,8 +94,7 @@ itemsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }
         const db = await getDb();
-        const query = { _id: new ObjectId(id) };
-        const item = await db.collection('items').findOne(query);
+        const item = await db.collection('items').findOne({ _id: new ObjectId(id) });
         if (!item) {
             res.status(404).send({ message: 'Item not found' });
             return;
@@ -177,16 +161,17 @@ itemsRouter.patch('/:id', verifyToken as unknown as (req: Request, res: Response
         const updatedData = { ...req.body };
         delete updatedData._id;
 
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = { $set: updatedData };
-        const result = await db.collection('items').updateOne(filter, updateDoc);
+        const result = await db.collection('items').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updatedData }
+        );
         res.send(result);
     } catch (error) {
         res.status(500).send({ message: 'Failed to update item', error: (error as Error).message });
     }
 });
 
-// DELETE /items/:id — delete item (verifyToken + owner check)
+// DELETE /items/:id — delete item (verifyToken + owner or admin check)
 itemsRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Response, next: () => void) => void, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const id = String(req.params.id);
@@ -203,7 +188,6 @@ itemsRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Respons
             return;
         }
 
-        // Allow owner or admin to delete
         const email = req.user?.email;
         const userDoc = await db.collection('users').findOne({ email });
         const isAdmin = userDoc?.role === 'admin';
@@ -213,8 +197,7 @@ itemsRouter.delete('/:id', verifyToken as unknown as (req: Request, res: Respons
             return;
         }
 
-        const query = { _id: new ObjectId(id) };
-        const result = await db.collection('items').deleteOne(query);
+        const result = await db.collection('items').deleteOne({ _id: new ObjectId(id) });
         res.send(result);
     } catch (error) {
         res.status(500).send({ message: 'Failed to delete item', error: (error as Error).message });

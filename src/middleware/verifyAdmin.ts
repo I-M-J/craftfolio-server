@@ -1,12 +1,11 @@
 import { Response, NextFunction } from 'express';
-import { MongoClient } from 'mongodb';
+import { getDb } from '../lib/db';
 import { AuthRequest } from '../types';
 
-const uri = process.env.MONGODB_URI;
-const adminClient = uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))
-    ? new MongoClient(uri)
-    : null;
-
+/**
+ * Middleware: verifies that the authenticated user has the 'admin' role in the database.
+ * Must be used after verifyToken so that req.user is already populated.
+ */
 export const verifyAdmin = async (
     req: AuthRequest,
     res: Response,
@@ -20,12 +19,7 @@ export const verifyAdmin = async (
     }
 
     try {
-        if (!adminClient) {
-            res.status(503).send({ message: 'Database not available' });
-            return;
-        }
-        await adminClient.connect();
-        const db = adminClient.db('craftfolio_db');
+        const db = await getDb();
         const user = await db.collection('users').findOne({ email });
 
         if (!user || user.role !== 'admin') {

@@ -1,24 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { MongoClient } from 'mongodb';
+import { getDb } from '../lib/db';
 
 export const statsRouter = Router();
 
-let client: MongoClient | null = null;
-
-const getDb = async () => {
-    if (!client) {
-        const uri = process.env.MONGODB_URI;
-        if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
-            client = new MongoClient(uri);
-        } else {
-            throw new Error('Database client not initialized: MONGODB_URI missing');
-        }
-    }
-    await client.connect();
-    return client.db('craftfolio_db');
-};
-
-// GET /stats — MongoDB aggregation: category-wise item count for Recharts
+// GET /stats — MongoDB aggregation: category-wise item count + avgPrice for Recharts
 statsRouter.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
         const db = await getDb();
