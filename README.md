@@ -13,12 +13,12 @@ The Express + MongoDB REST API powering the Craftfolio artisan marketplace. Hand
 - **Full Item CRUD**: Search, filter by category/price, sort, and paginate items.
 - **Review System**: Post reviews with automatic avgRating recalculation on the item.
 - **Stats Aggregation**: MongoDB `$group` pipeline returns category-wise item counts for Recharts visualization.
-- **Auto-Seeding**: Seeds 12 sample items and admin account on first startup if DB is empty.
+- **Auto-Seeding**: Seeds 12 sample items (divided among 3 unique sellers) and an admin account on startup. Automatically detects legacy mock data to drop and reseed.
 
 ## 🛠️ Tech Stack
 
 - **Runtime & Framework**: Node.js (TypeScript) & Express.js
-- **Database**: MongoDB (Native Driver — no Mongoose)
+- **Database**: MongoDB (Native Driver — no Mongoose, lazily initialized client)
 - **Auth**: JWT verification via `jose-cjs` + Better-Auth JWKS
 - **Dev**: `tsx` + `nodemon` for hot-reload TypeScript execution
 
@@ -51,12 +51,13 @@ The Express + MongoDB REST API powering the Craftfolio artisan marketplace. Hand
 ### 👥 Users
 - `GET /users` — All users *(Admin only)*
 - `GET /users/me` — Current user profile *(Auth required)*
+- `GET /users/email/:email` — Get public details of a seller (name, email, role, createdAt)
 - `POST /users` — Create/sync user on login
 - `PATCH /users/:id/role` — Update role *(Admin only)*
 - `DELETE /users/:id` — Delete user *(Admin only)*
 
 ### 🧺 Items
-- `GET /items` — List items with `?search`, `?category`, `?minPrice`, `?maxPrice`, `?sortBy`, `?page`, `?limit`
+- `GET /items` — List items with `?search`, `?category`, `?minPrice`, `?maxPrice`, `?sortBy`, `?page`, `?limit`, and `?sellerEmail` *(for filtering by seller)*
 - `GET /items/featured` — 8 highest-rated items for homepage
 - `GET /items/:id` — Single item detail
 - `POST /items` — Add item *(Auth required)*
@@ -73,7 +74,10 @@ The Express + MongoDB REST API powering the Craftfolio artisan marketplace. Hand
 
 ## 🔐 Demo Credentials
 
-| Role  | Email                      | Password    |
-|-------|----------------------------|-------------|
-| User  | demo@craftfolio.com        | Demo@1234   |
-| Admin | admin@craftfolio.com       | Admin@1234  |
+| Role | Email | Password | Assigned Shop Creations |
+|------|-------|----------|-------------------------|
+| Admin | admin@craftfolio.com | Admin@1234 | Platform Administration |
+| Demo User | demo@craftfolio.com | Demo@1234 | General Testing |
+| Seller (Maya) | maya@craftfolio.com | Seller@1234 | Ceramics, Candles, Flowers, Beeswax |
+| Seller (Layla) | layla@craftfolio.com | Seller@1234 | Fiber Art, Woodwork, Tote Bags, Pens |
+| Seller (James) | james@craftfolio.com | Seller@1234 | Leather, Jewelry, Linen, Origami |
